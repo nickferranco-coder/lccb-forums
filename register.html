@@ -1,0 +1,73 @@
+<html>
+    <head>
+        <title>Register - The LCCB Forums</title>
+        <link rel="stylesheet" href="style.css">
+        <!-- Load the official Supabase JavaScript Library CDN -->
+        <script src="https://jsdelivr.net"></script>
+    </head>
+    <body>
+        <h1 style="text-align:center;">Register for The LCCB Forums</h1>
+        
+        <form id="registerForm" style="text-align:center;">
+            <label for="username">Username:</label><br>
+            <input type="text" id="username" name="username" required><br><br>
+            
+            <label for="email">Email:</label><br>
+            <!-- Tip: Using the 'pattern' attribute blocks wrong emails directly in the browser HTML -->
+            <input type="email" id="email" name="email" pattern="^[a-zA-Z0-9._%+-]+@lccbonline\.edu\.ph$" title="Only @lccbonline.edu.ph emails are allowed." required><br><br>
+            
+            <label for="password">Password:</label><br>
+            <input type="password" id="password" name="password" required><br><br>
+            
+            <input type="submit" value="Register">
+        </form>
+        
+        <p id="message" style="text-align:center; font-weight:bold;"></p>
+        <p style="text-align:center;">Already have an account? <a href="login.html">Log in here</a>.</p>
+
+        <script>
+            const SUPABASE_URL = 'https://supabase.co'; 
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjZ2piaGZvaXBjaXBmdXBwY2NwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzUwMTgsImV4cCI6MjEwNzIxMTAxOH0.Q1Yutq0Y-wTHUvMzwSEWjAd4C4KgR3Coc2Xk8QpiEUE';
+            
+            const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            document.getElementById('registerForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const email = document.getElementById('email').value.trim().toLowerCase();
+                const password = document.getElementById('password').value;
+                const username = document.getElementById('username').value;
+                const messageEl = document.getElementById('message');
+
+                // JavaScript Validation: Double-checks that the email ends with the correct domain
+                if (!email.endsWith('@lccbonline.edu.ph')) {
+                    messageEl.style.color = 'red';
+                    messageEl.innerText = "Error: Registration is restricted to @lccbonline.edu.ph email accounts only.";
+                    return; // Stops execution and prevents sending data to Supabase
+                }
+
+                // Replace the message line inside your register.html 'else' block with this:
+messageEl.style.color = 'green';
+messageEl.innerText = "Account created! A verification link has been sent to your @lccbonline.edu.ph email. Please confirm it before logging in.";
+
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: { display_name: username }
+                    }
+                });
+
+                if (error) {
+                    messageEl.style.color = 'red';
+                    messageEl.innerText = error.message;
+                } else {
+                    messageEl.style.color = 'green';
+                    messageEl.innerText = "Registration successful! Redirecting to login page...";
+                    setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+                }
+            });
+        </script>
+        <h1>This is an unofficial student project. DO NOT use your official school account password here. Create a brand new password for this forum."</h1>
+    </body>
+</html>
