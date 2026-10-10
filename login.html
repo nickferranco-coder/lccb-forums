@@ -2,8 +2,7 @@
     <head>
         <title>Login - The LCCB Forums</title>
         <link rel="stylesheet" href="style.css">
-        <!-- Load the official Supabase JavaScript Library CDN -->
-        <script src="https://jsdelivr.net"></script>
+        <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     </head>
     <body>
         <h1 style="text-align:center;">Login to The LCCB Forums</h1>
@@ -20,19 +19,25 @@
 
         <p id="message" style="text-align:center; font-weight:bold;"></p>
         <p style="text-align:center;">Don't have an account? <a href="register.html">Register here</a>.</p>
+        <h1>DONT USE YOUR REAL LCCB PASSWORD</h1>
 
         <script>
+            const SUPABASE_URL = 'https://lcgjbhfoipcipfuppccp.supabase.co'; 
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjZ2piaGZvaXBjaXBmdXBwY2NwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzUwMTgsImV4cCI6MjEwNzIxMTAxOH0.Q1Yutq0Y-wTHUvMzwSEWjAd4C4KgR3Coc2Xk8QpiEUE';
             let supabase;
 
-            window.onload = function() {
-                const SUPABASE_URL = 'https://supabase.co'; 
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjZ2piaGZvaXBjaXBmdXBwY2NwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzUwMTgsImV4cCI6MjEwNzIxMTAxOH0.Q1Yutq0Y-wTHUvMzwSEWjAd4C4KgR3Coc2Xk8QpiEUE';
-                
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            function initSupabase() {
+                if (window.supabase) {
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    setupLogin();
+                } else {
+                    setTimeout(initSupabase, 30);
+                }
+            }
 
+            function setupLogin() {
                 document.getElementById('loginForm').addEventListener('submit', async (e) => {
                     e.preventDefault();
-
                     const email = document.getElementById('email').value;
                     const password = document.getElementById('password').value;
                     const messageEl = document.getElementById('message');
@@ -40,25 +45,24 @@
                     messageEl.style.color = 'blue';
                     messageEl.innerText = "Checking credentials...";
 
-                    const { data, error } = await supabase.auth.signInWithPassword({
-                        email: email,
-                        password: password,
-                    });
+                    const { data, error } = await supabase.auth.signInWithPassword({ email: email, password: password });
 
                     if (error) {
                         messageEl.style.color = 'red';
                         if (error.message.toLowerCase().includes("confirmed")) {
-                            messageEl.innerText = "Please check your @lccbonline.edu.ph inbox and confirm your email link before logging in.";
+                            messageEl.innerText = "Please confirm your email link first.";
                         } else {
                             messageEl.innerText = error.message;
                         }
                     } else {
                         messageEl.style.color = 'green';
-                        messageEl.innerText = "Login successful! Redirecting to forum dashboard...";
-                        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+                        messageEl.innerText = "Login successful! Redirecting...";
+                        setTimeout(() => { window.location.href = 'dashboard.html'; }, 500);
                     }
                 });
-            };
+            }
+
+            initSupabase();
         </script>
     </body>
 </html>
