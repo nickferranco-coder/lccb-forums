@@ -7,7 +7,8 @@
     <body>
         <h1 style="text-align:center;">Login to The LCCB Forums</h1>
         
-        <form id="loginForm" style="text-align:center;">
+        <!-- FIXED: Added an inline handler so the script intercepts the submission immediately -->
+        <form id="loginForm" onsubmit="handleLoginClick(event)" style="text-align:center;">
             <label for="email">Email:</label><br>
             <input type="email" id="email" name="email" required><br><br>
             
@@ -19,50 +20,56 @@
 
         <p id="message" style="text-align:center; font-weight:bold;"></p>
         <p style="text-align:center;">Don't have an account? <a href="register.html">Register here</a>.</p>
-        <h1>DONT USE YOUR REAL LCCB PASSWORD</h1>
+        <h1 style="text-align:center; color:red;">DONT USE YOUR REAL LCCB PASSWORD</h1>
 
         <script>
             const SUPABASE_URL = 'https://lcgjbhfoipcipfuppccp.supabase.co'; 
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjZ2piaGZvaXBjaXBmdXBwY2NwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzUwMTgsImV4cCI6MjEwNzIxMTAxOH0.Q1Yutq0Y-wTHUvMzwSEWjAd4C4KgR3Coc2Xk8QpiEUE';
-            let supabase;
+            
+            // FIXED: Renamed this tracking variable so it stops crashing your code
+            let supabaseClientInstance = null;
 
-            function initSupabase() {
+            function getDatabaseClient() {
+                if (supabaseClientInstance) return supabaseClientInstance;
                 if (window.supabase) {
-                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                    setupLogin();
+                    supabaseClientInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    return supabaseClientInstance;
+                }
+                return null;
+            }
+
+            async function handleLoginClick(e) {
+                e.preventDefault(); // STOPS THE PAGE FROM RESETTING OR REFRESHING
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const messageEl = document.getElementById('message');
+
+                messageEl.style.color = 'blue';
+                messageEl.innerText = "Checking credentials...";
+
+                const client = getDatabaseClient();
+                if (!client) {
+                    messageEl.style.color = 'red';
+                    messageEl.innerText = "Connection loading. Please wait a second and click Log In again.";
+                    return;
+                }
+
+                const { data, error } = await client.auth.signInWithPassword({ email: email, password: password });
+
+                if (error) {
+                    messageEl.style.color = 'red';
+                    if (error.message.toLowerCase().includes("confirmed")) {
+                        messageEl.innerText = "Please confirm your email link first.";
+                    } else {
+                        messageEl.innerText = error.message;
+                    }
                 } else {
-                    setTimeout(initSupabase, 30);
+                    messageEl.style.color = 'green';
+                    messageEl.innerText = "Login successful! Redirecting...";
+                    setTimeout(() => { window.location.href = 'dashboard.html'; }, 500);
                 }
             }
-
-            function setupLogin() {
-                document.getElementById('loginForm').addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const email = document.getElementById('email').value;
-                    const password = document.getElementById('password').value;
-                    const messageEl = document.getElementById('message');
-
-                    messageEl.style.color = 'blue';
-                    messageEl.innerText = "Checking credentials...";
-
-                    const { data, error } = await supabase.auth.signInWithPassword({ email: email, password: password });
-
-                    if (error) {
-                        messageEl.style.color = 'red';
-                        if (error.message.toLowerCase().includes("confirmed")) {
-                            messageEl.innerText = "Please confirm your email link first.";
-                        } else {
-                            messageEl.innerText = error.message;
-                        }
-                    } else {
-                        messageEl.style.color = 'green';
-                        messageEl.innerText = "Login successful! Redirecting...";
-                        setTimeout(() => { window.location.href = 'dashboard.html'; }, 500);
-                    }
-                });
-            }
-
-            initSupabase();
         </script>
     </body>
 </html>

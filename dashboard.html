@@ -42,7 +42,9 @@
         <script>
             const SUPABASE_URL = 'https://lcgjbhfoipcipfuppccp.supabase.co'; 
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjZ2piaGZvaXBjaXBmdXBwY2NwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzUwMTgsImV4cCI6MjEwNzIxMTAxOH0.Q1Yutq0Y-wTHUvMzwSEWjAd4C4KgR3Coc2Xk8QpiEUE';
-            let supabase;
+            
+            // FIXED: Renamed local tracking variable to stop conflict crashes with CDN
+            let supabaseClientInstance = null;
             let currentUser = null;
 
             // 1. FAST INITIALIZATION: Read from device localStorage cache files immediately
@@ -56,7 +58,6 @@
                         if (parsed?.user) {
                             currentUser = parsed.user;
                             const username = currentUser.user_metadata?.display_name || "LCCian Student";
-                            // Updates the text instantly on screen so there's zero waiting delay
                             document.getElementById('username-display').innerText = username;
                             return true;
                         }
@@ -68,13 +69,13 @@
             // Fire cache injection right away before anything else downloads
             const hasLocalSession = checkSessionCached();
             if (!hasLocalSession && !window.supabase) {
-                // If there's no trace of a session at all, route them to login immediately
                 window.location.href = 'login.html';
             }
 
             function initSupabase() {
                 if (window.supabase) {
-                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    // FIXED: Initializing client state safely using a custom variable name
+                    supabaseClientInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                     checkUserSessionLive();
                 } else {
                     setTimeout(initSupabase, 30);
@@ -83,7 +84,7 @@
 
             // 2. BACKGROUND SECURITY CHECK: Runs quietly in the background without locking the screen
             async function checkUserSessionLive() {
-                const { data: { user }, error } = await supabase.auth.getUser();
+                const { data: { user }, error } = await supabaseClientInstance.auth.getUser();
                 if (error || !user) {
                     window.location.href = 'login.html';
                     return;
@@ -97,7 +98,7 @@
             }
 
             async function fetchForumPosts() {
-                const { data, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
+                const { data, error } = await supabaseClientInstance.from('posts').select('*').order('created_at', { ascending: false });
                 const feedEl = document.getElementById('forumFeed');
                 if (error) { feedEl.innerText = "Error: " + error.message; return; }
                 if (data.length === 0) { feedEl.innerText = "No posts yet. Start the conversation!"; return; }
@@ -123,7 +124,7 @@
 
                     msgEl.style.color = 'blue'; msgEl.innerText = "Publishing...";
 
-                    const { error } = await supabase.from('posts').insert([{ content: content, user_id: currentUser.id, username: username }]);
+                    const { error } = await supabaseClientInstance.from('posts').insert([{ content: content, user_id: currentUser.id, username: username }]);
 
                     if (error) {
                         msgEl.style.color = 'red'; msgEl.innerText = error.message;
@@ -136,7 +137,7 @@
             }
 
             async function handleLogout() {
-                if (supabase) await supabase.auth.signOut();
+                if (supabaseClientInstance) await supabaseClientInstance.auth.signOut();
                 window.location.href = 'login.html';
             }
 

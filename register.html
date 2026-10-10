@@ -2,12 +2,14 @@
     <head>
         <title>Register - The LCCB Forums</title>
         <link rel="stylesheet" href="style.css">
-        <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <!-- Load the official Supabase JavaScript Library CDN -->
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     </head>
     <body>
         <h1 style="text-align:center;">Register for The LCCB Forums</h1>
         
-        <form id="registerForm" style="text-align:center;">
+        <!-- FORCE INLINE HANDLING TO PREVENT THE PAGE RESET / REFRESH LOOP -->
+        <form id="registerForm" onsubmit="handleRegisterClick(event)" style="text-align:center;">
             <label for="username">Username:</label><br>
             <input type="text" id="username" name="username" required><br><br>
             
@@ -22,57 +24,65 @@
         
         <p id="message" style="text-align:center; font-weight:bold;"></p>
         <p style="text-align:center;">Already have an account? <a href="login.html">Log in here</a>.</p>
+        
+        <!-- YOUR WARNING DISCLAIMER -->
+        <h1 style="text-align:center; color:red; font-size:1.5rem; margin-top:30px;">DONT USE YOUR REAL LCCB PASSWORD</h1>
 
         <script>
             const SUPABASE_URL = 'https://lcgjbhfoipcipfuppccp.supabase.co'; 
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjZ2piaGZvaXBjaXBmdXBwY2NwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzUwMTgsImV4cCI6MjEwNzIxMTAxOH0.Q1Yutq0Y-wTHUvMzwSEWjAd4C4KgR3Coc2Xk8QpiEUE';
-            let supabase;
+            
+            // FIXED: Unique instance name prevents crashing with global window.supabase object
+            let coreSupabaseInstance = null;
 
-            function initSupabase() {
+            function getDatabaseClient() {
+                if (supabaseClientInstance) return supabaseClientInstance;
                 if (window.supabase) {
-                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                    setupRegister();
+                    supabaseClientInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    return supabaseClientInstance;
+                }
+                return null;
+            }
+
+            async function handleRegisterClick(e) {
+                e.preventDefault(); // LOCKS FIELD VALUE POSITIONS IN PLACE
+
+                const messageEl = document.getElementById('message');
+                const email = document.getElementById('email').value.trim().toLowerCase();
+                const password = document.getElementById('password').value;
+                const username = document.getElementById('username').value.trim();
+
+                if (!email.endsWith('@lccbonline.edu.ph')) {
+                    messageEl.style.color = 'red';
+                    messageEl.innerText = "Error: Use @lccbonline.edu.ph only.";
+                    return;
+                }
+
+                messageEl.style.color = 'blue';
+                messageEl.innerText = "Creating account...";
+
+                const client = getDatabaseClient();
+                if (!client) {
+                    messageEl.style.color = 'red';
+                    messageEl.innerText = "Connection loading. Wait 2 seconds and try again.";
+                    return;
+                }
+
+                const { data, error } = await client.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: { data: { display_name: username } }
+                });
+
+                if (error) {
+                    messageEl.style.color = 'red';
+                    messageEl.innerText = error.message;
                 } else {
-                    setTimeout(initSupabase, 30);
+                    messageEl.style.color = 'green';
+                    messageEl.innerText = "Account created! Check your school email link.";
+                    setTimeout(() => { window.location.href = 'login.html'; }, 2000);
                 }
             }
-
-            function setupRegister() {
-                document.getElementById('registerForm').addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const email = document.getElementById('email').value.trim().toLowerCase();
-                    const password = document.getElementById('password').value;
-                    const username = document.getElementById('username').value;
-                    const messageEl = document.getElementById('message');
-
-                    if (!email.endsWith('@lccbonline.edu.ph')) {
-                        messageEl.style.color = 'red';
-                        messageEl.innerText = "Error: Use @lccbonline.edu.ph only.";
-                        return;
-                    }
-
-                    messageEl.style.color = 'blue';
-                    messageEl.innerText = "Creating account...";
-
-                    const { data, error } = await supabase.auth.signUp({
-                        email: email,
-                        password: password,
-                        options: { data: { display_name: username } }
-                    });
-
-                    if (error) {
-                        messageEl.style.color = 'red';
-                        messageEl.innerText = error.message;
-                    } else {
-                        messageEl.style.color = 'green';
-                        messageEl.innerText = "Account created! Check your school email link.";
-                        setTimeout(() => { window.location.href = 'login.html'; }, 2000);
-                    }
-                });
-            }
-
-            initSupabase();
         </script>
-        <h1>DONT USE YOUR REAL LCCB PASSWORD</h1>
     </body>
 </html>
