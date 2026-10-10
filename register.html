@@ -17,7 +17,7 @@
 
         <label for="email">Email:</label><br>
         <input type="email" id="email"
-            pattern="[a-zA-Z0-9._%+-]+@lccbonline\.edu\.ph"
+            pattern="[a-zA-Z0-9._%+\-]+@lccbonline\.edu\.ph"
             title="Only @lccbonline.edu.ph emails are allowed."
             required>
         <br><br>
@@ -46,7 +46,7 @@
             'https://lcgjbhfoipcipfuppccp.supabase.co';
 
         const SUPABASE_ANON_KEY =
-            'sb_publishable_lEVGq35nrwPvxyXd27VKUA_PRngx7A-';
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjZ2piaGZvaXBjaXBmdXBwY2NwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzUwMTgsImV4cCI6MjEwNzIxMTAxOH0.Q1Yutq0Y-wTHUvMzwSEWjAd4C4KgR3Coc2Xk8QpiEUE';
 
         const client = window.supabase.createClient(
             SUPABASE_URL,
