@@ -8,7 +8,6 @@
     <body>
         <h1 style="text-align:center;">Login to The LCCB Forums</h1>
         
-        <!-- Removed action="login_process.php" since Supabase handles this via JS -->
         <form id="loginForm" style="text-align:center;">
             <label for="email">Email:</label><br>
             <input type="email" id="email" name="email" required><br><br>
@@ -19,62 +18,47 @@
             <input type="submit" value="Log In">
         </form>
 
-        <!-- Status message placeholder for errors or success indications -->
         <p id="message" style="text-align:center; font-weight:bold;"></p>
-
         <p style="text-align:center;">Don't have an account? <a href="register.html">Register here</a>.</p>
 
         <script>
-            // Initialize your Supabase client with your project credentials
-            const SUPABASE_URL = 'https://supabase.co'; 
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjZ2piaGZvaXBjaXBmdXBwY2NwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzUwMTgsImV4cCI6MjEwNzIxMTAxOH0.Q1Yutq0Y-wTHUvMzwSEWjAd4C4KgR3Coc2Xk8QpiEUE';
+            let supabase;
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            window.onload = function() {
+                const SUPABASE_URL = 'https://supabase.co'; 
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjZ2piaGZvaXBjaXBmdXBwY2NwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzUwMTgsImV4cCI6MjEwNzIxMTAxOH0.Q1Yutq0Y-wTHUvMzwSEWjAd4C4KgR3Coc2Xk8QpiEUE';
+                
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
+                document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
 
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const messageEl = document.getElementById('message');
+                    const email = document.getElementById('email').value;
+                    const password = document.getElementById('password').value;
+                    const messageEl = document.getElementById('message');
 
-    messageEl.style.color = 'blue';
-    messageEl.innerText = "Checking credentials...";
+                    messageEl.style.color = 'blue';
+                    messageEl.innerText = "Checking credentials...";
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-    });
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                        email: email,
+                        password: password,
+                    });
 
-    if (error) {
-        messageEl.style.color = 'red';
-        
-        // Catch if they haven't verified their school inbox yet
-        if (error.message.toLowerCase().includes("confirmed")) {
-            messageEl.innerText = "Please check your @lccbonline.edu.ph inbox and confirm your email link before logging in.";
-        } else {
-            messageEl.innerText = error.message;
-        }
-    } else {
-        messageEl.style.color = 'green';
-        messageEl.innerText = "Login successful! Redirecting to forum dashboard...";
-        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
-    }
-});
-
-
-                if (error) {
-                    messageEl.style.color = 'red';
-                    messageEl.innerText = error.message;
-                } else {
-                    messageEl.style.color = 'green';
-                    messageEl.innerText = "Login successful! Redirecting to forum dashboard...";
-                    
-                    // Automatically send them to your main dashboard page after 1.5 seconds
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 1500);
-                }
+                    if (error) {
+                        messageEl.style.color = 'red';
+                        if (error.message.toLowerCase().includes("confirmed")) {
+                            messageEl.innerText = "Please check your @lccbonline.edu.ph inbox and confirm your email link before logging in.";
+                        } else {
+                            messageEl.innerText = error.message;
+                        }
+                    } else {
+                        messageEl.style.color = 'green';
+                        messageEl.innerText = "Login successful! Redirecting to forum dashboard...";
+                        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+                    }
+                });
+            };
         </script>
     </body>
 </html>

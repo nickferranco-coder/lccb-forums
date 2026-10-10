@@ -5,7 +5,6 @@
         <script src="https://jsdelivr.net"></script>
         
         <style>
-            /* Layout styling to anchor username details cleanly in the top right corner */
             .top-bar {
                 display: flex;
                 justify-content: flex-end;
@@ -16,7 +15,7 @@
                 gap: 15px;
             }
             .username-accent {
-                color: #0066cc; /* Clean accent color for the student username */
+                color: #0066cc;
                 font-weight: bold;
             }
             .logout-btn {
@@ -34,7 +33,6 @@
         </style>
     </head>
     <body>
-        <!-- Top Right User Navigation Panel -->
         <div class="top-bar">
             Welcome, <span id="username-display" class="username-accent">Loading...</span>!
             <button class="logout-btn" onclick="handleLogout()">Log Out</button>
@@ -47,37 +45,56 @@
         </div>
 
         <script>
-            // Initialize your Supabase client
             const SUPABASE_URL = 'https://supabase.co'; 
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjZ2piaGZvaXBjaXBmdXBwY2NwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzUwMTgsImV4cCI6MjEwNzIxMTAxOH0.Q1Yutq0Y-wTHUvMzwSEWjAd4C4KgR3Coc2Xk8QpiEUE';
-            
-            const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            let supabase;
 
-            // Page Protection: Automatically look up the active LCCian user session
-            async function checkUserSession() {
+            // Fast Session Check: Instantly runs from local memory data
+            function loadCachedUser() {
+                const sessionKey = `sb-${new URL(SUPABASE_URL).hostname}-auth-token`;
+                const cachedData = localStorage.getItem(sessionKey);
+
+                if (cachedData) {
+                    try {
+                        const parsed = JSON.parse(cachedData);
+                        const user = parsed?.user;
+                        if (user) {
+                            const username = user.user_metadata?.display_name || "LCCian Student";
+                            document.getElementById('username-display').innerText = username;
+                            return true;
+                        }
+                    } catch (e) {
+                        console.error("Cache read error:", e);
+                    }
+                }
+                return false;
+            }
+
+            async function checkUserSessionLive() {
                 const { data: { user }, error } = await supabase.auth.getUser();
-
-                // Security wall: Kick unverified users right back to the login script
                 if (error || !user) {
                     window.location.href = 'login.html';
                     return;
                 }
-
-                // Extract the profile display_name metadata from registration
                 const username = user.user_metadata?.display_name || "LCCian Student";
-                
-                // Inject the string data safely into the layout container
                 document.getElementById('username-display').innerText = username;
             }
 
-            // Cleanly destroy browser cookies and storage sessions on sign-out
             async function handleLogout() {
-                await supabase.auth.signOut();
+                if (supabase) {
+                    await supabase.auth.signOut();
+                }
                 window.location.href = 'login.html';
             }
 
-            // Initialize the database lookups instantly
-            checkUserSession();
+            // Run rendering immediately from cache
+            loadCachedUser();
+
+            // Then safely initialize Supabase network requests in the background
+            window.onload = function() {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                checkUserSessionLive();
+            };
         </script>
     </body>
 </html>
