@@ -1,7 +1,8 @@
 <html>
 <head>
-    <title>The LCCB Forums - Dashboard</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The LCCB Forums Dashboard</title>
     <link rel="stylesheet" href="style.css">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -14,6 +15,7 @@
             padding: 15px 20px;
             font-family: Arial, sans-serif;
             gap: 15px;
+            flex-wrap: wrap;
         }
 
         .username-accent {
@@ -22,28 +24,31 @@
         }
 
         .logout-btn {
-            background-color: #ff4d4d;
+            background: #ff4d4d;
             color: white;
             border: none;
-            padding: 6px 12px;
+            padding: 8px 12px;
             cursor: pointer;
             border-radius: 4px;
             font-weight: bold;
         }
 
-        .forum-box {
+        .forum-box, .feed-container {
             max-width: 600px;
-            margin: 30px auto;
+            margin: 20px auto;
+            font-family: Arial, sans-serif;
+        }
+
+        .forum-box {
             padding: 20px;
             border: 1px solid #ccc;
             border-radius: 8px;
-            font-family: Arial, sans-serif;
         }
 
         textarea {
             box-sizing: border-box;
             width: 100%;
-            height: 80px;
+            height: 90px;
             padding: 10px;
             margin-bottom: 10px;
             border-radius: 4px;
@@ -53,7 +58,7 @@
         }
 
         .post-btn {
-            background-color: #008cba;
+            background: #008cba;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -62,19 +67,12 @@
             font-weight: bold;
         }
 
-        .feed-container {
-            max-width: 600px;
-            margin: 20px auto;
-            font-family: Arial, sans-serif;
-        }
-
         .post-card {
             background: #f9f9f9;
             border: 1px solid #ddd;
             padding: 15px;
             margin-bottom: 15px;
             border-radius: 6px;
-            text-align: left;
             overflow-wrap: anywhere;
         }
 
@@ -85,26 +83,17 @@
         }
 
         .post-author {
-            font-weight: bold;
             color: #0066cc;
+            font-weight: bold;
         }
 
         .post-body {
             white-space: pre-wrap;
         }
 
-        .status-message {
-            font-weight: bold;
-        }
-
         @media (max-width: 640px) {
             .forum-box, .feed-container {
                 margin: 20px 12px;
-            }
-
-            .top-bar {
-                flex-wrap: wrap;
-                padding: 12px;
             }
         }
     </style>
@@ -113,11 +102,9 @@
 <body>
     <div class="top-bar">
         Welcome,
-        <span id="username-display" class="username-accent">
-            Loading...
-        </span>!
+        <span id="username-display" class="username-accent">Loading...</span>!
 
-        <button class="logout-btn" id="logoutButton" type="button">
+        <button id="logoutButton" class="logout-btn" type="button">
             Log Out
         </button>
     </div>
@@ -128,25 +115,22 @@
         <h3>Create a Post</h3>
 
         <form id="postForm">
-            <textarea
-                id="postContent"
+            <textarea id="postContent"
                 placeholder="Share something with fellow LCCians..."
-                maxlength="2000"
-                required
-            ></textarea>
+                maxlength="2000" required></textarea>
 
-            <button type="submit" class="post-btn" id="publishButton">
+            <button id="publishButton" class="post-btn" type="submit">
                 Publish Post
             </button>
         </form>
 
-        <p id="postMessage" class="status-message" role="status"></p>
+        <p id="postMessage" role="status" aria-live="polite"></p>
     </div>
 
     <div class="feed-container">
         <h3>Recent Student Activity</h3>
         <hr>
-        <div id="forumFeed">Loading forum feed...</div>
+        <div id="forumFeed">Loading posts...</div>
     </div>
 
     <script>
@@ -164,52 +148,60 @@
         const usernameDisplay =
             document.getElementById('username-display');
 
+        const forumFeed = document.getElementById('forumFeed');
         const postForm = document.getElementById('postForm');
         const postContent = document.getElementById('postContent');
         const postMessage = document.getElementById('postMessage');
-        const forumFeed = document.getElementById('forumFeed');
         const publishButton = document.getElementById('publishButton');
         const logoutButton = document.getElementById('logoutButton');
 
         let currentUser = null;
-        let isPublishing = false;
+        let publishing = false;
+
+        function getUsername(user) {
+            return user.user_metadata?.display_name || 'LCCian Student';
+        }
 
         function showMessage(element, text, color) {
             element.textContent = text;
             element.style.color = color;
         }
 
-        function getUsername(user) {
-            return user.user_metadata?.display_name || 'LCCian Student';
-        }
-
         async function initializeDashboard() {
             try {
-                const { data, error } = await client.auth.getUser();
+                // Read the local session without an initial getUser()
+                // network verification request.
+                const { data, error } = await client.auth.getSession();
 
-                if (error || !data.user) {
+                if (error) {
+                    throw error;
+                }
+
+                if (!data.session) {
                     window.location.replace('login.html');
                     return;
                 }
 
-                currentUser = data.user;
+                currentUser = data.session.user;
 
                 usernameDisplay.textContent = getUsername(currentUser);
 
-                await fetchForumPosts();
+                // Start loading posts without delaying the dashboard.
+                fetchForumPosts();
+
             } catch (error) {
                 console.error('Session error:', error);
 
                 showMessage(
                     forumFeed,
-                    'Unable to verify your session. Please log in again.',
+                    'Could not check your session. Please try again.',
                     'red'
                 );
             }
         }
 
         async function fetchForumPosts() {
-            forumFeed.textContent = 'Loading forum feed...';
+            forumFeed.textContent = 'Loading posts...';
 
             try {
                 const { data, error } = await client
@@ -230,13 +222,12 @@
                 if (!data || data.length === 0) {
                     forumFeed.textContent =
                         'No posts yet. Start the conversation!';
-
                     return;
                 }
 
                 forumFeed.replaceChildren();
 
-                data.forEach(function (post) {
+                data.forEach(function(post) {
                     const card = document.createElement('div');
                     card.className = 'post-card';
 
@@ -245,11 +236,7 @@
 
                     const author = document.createElement('span');
                     author.className = 'post-author';
-
-                    // Use textContent so usernames cannot inject HTML.
                     author.textContent = post.username || 'LCCian Student';
-
-                    meta.append('By ', author, ' on ');
 
                     const date = document.createElement('span');
                     const parsedDate = new Date(post.created_at);
@@ -258,17 +245,16 @@
                         ? 'Unknown date'
                         : parsedDate.toLocaleString();
 
-                    meta.appendChild(date);
+                    meta.append('By ', author, ' on ', date);
 
-                    const body = document.createElement('div');
-                    body.className = 'post-body';
+                    const content = document.createElement('div');
+                    content.className = 'post-body';
+                    content.textContent = post.content || '';
 
-                    // Never interpret user-generated post content as HTML.
-                    body.textContent = post.content || '';
-
-                    card.append(meta, body);
+                    card.append(meta, content);
                     forumFeed.appendChild(card);
                 });
+
             } catch (error) {
                 console.error('Feed error:', error);
 
@@ -277,10 +263,10 @@
             }
         }
 
-        postForm.addEventListener('submit', async function (event) {
+        postForm.addEventListener('submit', async function(event) {
             event.preventDefault();
 
-            if (!currentUser || isPublishing) {
+            if (!currentUser || publishing) {
                 return;
             }
 
@@ -291,16 +277,7 @@
                 return;
             }
 
-            if (content.length > 2000) {
-                showMessage(
-                    postMessage,
-                    'Posts must be 2,000 characters or fewer.',
-                    'red'
-                );
-                return;
-            }
-
-            isPublishing = true;
+            publishing = true;
             publishButton.disabled = true;
 
             showMessage(postMessage, 'Publishing...', 'blue');
@@ -319,7 +296,7 @@
 
                     showMessage(
                         postMessage,
-                        'Could not publish your post. Check database permissions.',
+                        'Could not publish. Check your database permissions.',
                         'red'
                     );
 
@@ -331,6 +308,7 @@
                 showMessage(postMessage, 'Post shared!', 'green');
 
                 await fetchForumPosts();
+
             } catch (error) {
                 console.error('Publish error:', error);
 
@@ -340,12 +318,12 @@
                     'red'
                 );
             } finally {
-                isPublishing = false;
+                publishing = false;
                 publishButton.disabled = false;
             }
         });
 
-        logoutButton.addEventListener('click', async function () {
+        logoutButton.addEventListener('click', async function() {
             logoutButton.disabled = true;
 
             try {
@@ -365,6 +343,7 @@
                 }
 
                 window.location.replace('login.html');
+
             } catch (error) {
                 console.error('Logout error:', error);
 

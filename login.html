@@ -1,45 +1,46 @@
-```html
 <html>
 <head>
-    <title>Login - The LCCB Forums</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - The LCCB Forums</title>
     <link rel="stylesheet" href="style.css">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-
 <body>
     <h1 style="text-align:center;">Login to The LCCB Forums</h1>
 
     <form id="loginForm" style="text-align:center;">
         <label for="email">Email:</label><br>
-        <input type="email" id="email" name="email" required><br><br>
+        <input type="email" id="email" autocomplete="username" required>
+        <br><br>
 
         <label for="password">Password:</label><br>
-        <input type="password" id="password" name="password" required><br><br>
+        <input type="password" id="password"
+               autocomplete="current-password" required>
+        <br><br>
 
-        <input type="submit" value="Log In">
+        <button type="submit" id="loginButton">Log In</button>
     </form>
 
-    <p id="message"
-       style="text-align:center;font-weight:bold;"
-       role="status" aria-live="polite"></p>
+    <p id="message" role="status" aria-live="polite"
+       style="text-align:center;font-weight:bold;"></p>
 
     <p style="text-align:center;">
         Don't have an account?
         <a href="register.html">Register here</a>.
     </p>
 
-    <h1 style="text-align:center;color:red;">
+    <h2 style="text-align:center;color:red;">
         DON'T USE YOUR REAL LCCB PASSWORD
-    </h1>
+    </h2>
 
     <script>
         const SUPABASE_URL =
             'https://lcgjbhfoipcipfuppccp.supabase.co';
 
         const SUPABASE_ANON_KEY =
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdWIiLCJyZWYiOiJsY2dqYmhmb2lwY2lwZnVwcGNjcHAiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc5MTYzNTAxOCwiZXhwIjoyMTA3MjExMDE4fQ.Q1Yutq0Y-wTHUvMzwSEWjAd4C4KgR3Coc2Xk8QpiEUE';
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGciOiJIUzI1NiIsInJlZiI6ImxjZ2piaGZvaXBjaXBmdXBwY2NwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzUwMTgsImV4cCI6MjEwNzIxMTAxOH0.Q1Yutq0Y-wTHUvMzwSEWjAd4C4KgR3Coc2Xk8QpiEUE';
 
         const client = window.supabase.createClient(
             SUPABASE_URL,
@@ -47,66 +48,68 @@
         );
 
         const form = document.getElementById('loginForm');
-        const messageEl = document.getElementById('message');
+        const message = document.getElementById('message');
+        const button = document.getElementById('loginButton');
 
-        form.addEventListener('submit', handleLoginClick);
+        function showMessage(text, color) {
+            message.textContent = text;
+            message.style.color = color;
+        }
 
-        async function handleLoginClick(event) {
+        form.addEventListener('submit', async function(event) {
             event.preventDefault();
 
-            const email = document.getElementById('email')
-                .value.trim().toLowerCase();
+            const email =
+                document.getElementById('email').value.trim().toLowerCase();
 
-            const password = document.getElementById('password').value;
-            const submitButton = form.querySelector(
-                'input[type="submit"]'
-            );
+            const password =
+                document.getElementById('password').value;
 
-            messageEl.style.color = 'blue';
-            messageEl.textContent = 'Checking credentials...';
-            submitButton.disabled = true;
+            button.disabled = true;
+            showMessage('Logging in...', 'blue');
 
             try {
-                const { error } = await client.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
+                const { data, error } =
+                    await client.auth.signInWithPassword({
+                        email: email,
+                        password: password
+                    });
 
                 if (error) {
-                    messageEl.style.color = 'red';
-
-                    if (
-                        error.message.toLowerCase().includes('confirm')
-                    ) {
-                        messageEl.textContent =
-                            'Please confirm your email using the verification link first.';
+                    if (error.message.toLowerCase().includes('confirm')) {
+                        showMessage(
+                            'Please verify your email before logging in.',
+                            'red'
+                        );
                     } else {
-                        messageEl.textContent = error.message;
+                        showMessage(error.message, 'red');
                     }
-
                     return;
                 }
 
-                messageEl.style.color = 'green';
-                messageEl.textContent =
-                    'Login successful! Redirecting...';
+                if (!data.session) {
+                    showMessage(
+                        'No active session was created. Please try again.',
+                        'red'
+                    );
+                    return;
+                }
 
-                setTimeout(function () {
-                    window.location.href = 'dashboard.html';
-                }, 500);
+                showMessage('Login successful! Opening forums...', 'green');
+
+                window.location.replace('dashboard.html');
 
             } catch (error) {
-                messageEl.style.color = 'red';
-                messageEl.textContent =
-                    'Connection error. Please try again.';
+                console.error('Login error:', error);
 
-                console.error(error);
-
+                showMessage(
+                    'Connection problem. Check your internet and try again.',
+                    'red'
+                );
             } finally {
-                submitButton.disabled = false;
+                button.disabled = false;
             }
-        }
+        });
     </script>
 </body>
 </html>
-```
