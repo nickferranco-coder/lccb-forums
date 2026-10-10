@@ -1,91 +1,136 @@
 <html>
-    <head>
-        <title>Register - The LCCB Forums</title>
-        <link rel="stylesheet" href="style.css">
-        <!-- Load the official Supabase JavaScript Library CDN -->
-        <script src="https://jsdelivr.net"></script>
-    </head>
-    <body>
-        <h1 style="text-align:center;">Register for The LCCB Forums</h1>
-        
-        <!-- FORCE INLINE HANDLING TO PREVENT THE PAGE RESET / REFRESH LOOP -->
-        <form id="registerForm" onsubmit="handleRegisterClick(event)" style="text-align:center;">
-            <label for="username">Username:</label><br>
-            <input type="text" id="username" name="username" required><br><br>
-            
-            <label for="email">Email:</label><br>
-            <input type="email" id="email" name="email" pattern="^[a-zA-Z0-9._%+-]+@lccbonline\.edu\.ph$" title="Only @lccbonline.edu.ph emails are allowed." required><br><br>
-            
-            <label for="password">Password:</label><br>
-            <input type="password" id="password" name="password" required><br><br>
-            
-            <input type="submit" value="Register">
-        </form>
-        
-        <p id="message" style="text-align:center; font-weight:bold;"></p>
-        <p style="text-align:center;">Already have an account? <a href="login.html">Log in here</a>.</p>
-        
-        <!-- YOUR WARNING DISCLAIMER -->
-        <h1 style="text-align:center; color:red; font-size:1.5rem; margin-top:30px;">DONT USE YOUR REAL LCCB PASSWORD</h1>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - The LCCB Forums</title>
+    <link rel="stylesheet" href="style.css">
 
-        <script>
-            const SUPABASE_URL = 'https://supabase.co'; 
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjZ2piaGZvaXBjaXBmdXBwY2NwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzUwMTgsImV4cCI6MjEwNzIxMTAxOH0.Q1Yutq0Y-wTHUvMzwSEWjAd4C4KgR3Coc2Xk8QpiEUE';
-            
-            // FIXED: Standardized the variable name across the entire script
-            let supabaseClientInstance = null;
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
 
-            function getDatabaseClient() {
-                if (supabaseClientInstance) return supabaseClientInstance;
-                if (window.supabase) {
-                    supabaseClientInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                    return supabaseClientInstance;
-                }
-                return null;
+<body>
+    <h1 style="text-align:center;">Register for The LCCB Forums</h1>
+
+    <form id="registerForm" style="text-align:center;">
+        <label for="username">Username:</label><br>
+        <input type="text" id="username" name="username"
+               maxlength="30" required><br><br>
+
+        <label for="email">Email:</label><br>
+        <input type="email" id="email" name="email"
+               pattern="[a-zA-Z0-9._%+-]+@lccbonline\.edu\.ph"
+               title="Only @lccbonline.edu.ph emails are allowed."
+               required><br><br>
+
+        <label for="password">Password:</label><br>
+        <input type="password" id="password" name="password"
+               minlength="8" required><br><br>
+
+        <input type="submit" value="Register">
+    </form>
+
+    <p id="message"
+       style="text-align:center;font-weight:bold;"
+       role="status" aria-live="polite"></p>
+
+    <p style="text-align:center;">
+        Already have an account?
+        <a href="login.html">Log in here</a>.
+    </p>
+
+    <h1 style="text-align:center;color:red;font-size:1.5rem;margin-top:30px;">
+        DON'T USE YOUR REAL LCCB PASSWORD
+    </h1>
+
+    <script>
+        const SUPABASE_URL =
+            'https://lcgjbhfoipcipfuppccp.supabase.co';
+
+        const SUPABASE_ANON_KEY =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdWIiLCJyZWYiOiJsY2dqYmhmb2lwY2lwZnVwcGNjcHAiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc5MTYzNTAxOCwiZXhwIjoyMTA3MjExMDE4fQ.Q1Yutq0Y-wTHUvMzwSEWjAd4C4KgR3Coc2Xk8QpiEUE';
+
+        const client = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY
+        );
+
+        const form = document.getElementById('registerForm');
+        const messageEl = document.getElementById('message');
+
+        form.addEventListener('submit', handleRegisterClick);
+
+        async function handleRegisterClick(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username')
+                .value.trim();
+
+            const email = document.getElementById('email')
+                .value.trim().toLowerCase();
+
+            const password = document.getElementById('password').value;
+
+            if (!username) {
+                showMessage('Please enter a username.', 'red');
+                return;
             }
 
-            async function handleRegisterClick(e) {
-                e.preventDefault(); // LOCKS FIELD VALUE POSITIONS IN PLACE
+            if (!/^[a-zA-Z0-9._%+-]+@lccbonline\.edu\.ph$/.test(email)) {
+                showMessage(
+                    'Error: Use an @lccbonline.edu.ph email only.',
+                    'red'
+                );
+                return;
+            }
 
-                const messageEl = document.getElementById('message');
-                const email = document.getElementById('email').value.trim().toLowerCase();
-                const password = document.getElementById('password').value;
-                const username = document.getElementById('username').value.trim();
+            showMessage('Creating account...', 'blue');
 
-                if (!email.endsWith('@lccbonline.edu.ph')) {
-                    messageEl.style.color = 'red';
-                    messageEl.innerText = "Error: Use @lccbonline.edu.ph only.";
-                    return;
-                }
+            const submitButton = form.querySelector(
+                'input[type="submit"]'
+            );
 
-                messageEl.style.color = 'blue';
-                messageEl.innerText = "Creating account...";
+            submitButton.disabled = true;
 
-                const client = getDatabaseClient();
-                if (!client) {
-                    messageEl.style.color = 'red';
-                    messageEl.innerText = "Connection loading. Wait 2 seconds and try again.";
-                    return;
-                }
-
-                // Submit to secure auth tables
-                const { data, error } = await client.auth.signUp({
+            try {
+                const { error } = await client.auth.signUp({
                     email: email,
                     password: password,
-                    options: { data: { display_name: username } }
+                    options: {
+                        data: {
+                            display_name: username
+                        }
+                    }
                 });
 
                 if (error) {
-                    messageEl.style.color = 'red';
-                    messageEl.innerText = error.message;
-                } else {
-                    messageEl.style.color = 'green';
-                    messageEl.innerText = "Account created! A verification link has been sent to your @lccbonline.edu.ph email. Confirm it before logging in.";
-                    
-                    // Reset form fields manually only after absolute success
-                    document.getElementById('registerForm').reset();
+                    showMessage(error.message, 'red');
+                    return;
                 }
+
+                showMessage(
+                    'Registration submitted! Check your school email for a verification link if email confirmation is enabled.',
+                    'green'
+                );
+
+                form.reset();
+
+            } catch (error) {
+                showMessage(
+                    'Connection error. Please try again later.',
+                    'red'
+                );
+
+                console.error(error);
+
+            } finally {
+                submitButton.disabled = false;
             }
-        </script>
-    </body>
+        }
+
+        function showMessage(text, color) {
+            messageEl.textContent = text;
+            messageEl.style.color = color;
+        }
+    </script>
+</body>
 </html>
