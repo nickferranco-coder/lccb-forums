@@ -3,7 +3,7 @@
         <title>Register - The LCCB Forums</title>
         <link rel="stylesheet" href="style.css">
         <!-- Load the official Supabase JavaScript Library CDN -->
-        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="https://jsdelivr.net"></script>
     </head>
     <body>
         <h1 style="text-align:center;">Register for The LCCB Forums</h1>
@@ -29,11 +29,11 @@
         <h1 style="text-align:center; color:red; font-size:1.5rem; margin-top:30px;">DONT USE YOUR REAL LCCB PASSWORD</h1>
 
         <script>
-            const SUPABASE_URL = 'https://lcgjbhfoipcipfuppccp.supabase.co'; 
+            const SUPABASE_URL = 'https://supabase.co'; 
             const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjZ2piaGZvaXBjaXBmdXBwY2NwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzUwMTgsImV4cCI6MjEwNzIxMTAxOH0.Q1Yutq0Y-wTHUvMzwSEWjAd4C4KgR3Coc2Xk8QpiEUE';
             
-            // FIXED: Unique instance name prevents crashing with global window.supabase object
-            let coreSupabaseInstance = null;
+            // FIXED: Standardized the variable name across the entire script
+            let supabaseClientInstance = null;
 
             function getDatabaseClient() {
                 if (supabaseClientInstance) return supabaseClientInstance;
@@ -68,6 +68,7 @@
                     return;
                 }
 
+                // Submit to secure auth tables
                 const { data, error } = await client.auth.signUp({
                     email: email,
                     password: password,
@@ -79,8 +80,10 @@
                     messageEl.innerText = error.message;
                 } else {
                     messageEl.style.color = 'green';
-                    messageEl.innerText = "Account created! Check your school email link.";
-                    setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+                    messageEl.innerText = "Account created! A verification link has been sent to your @lccbonline.edu.ph email. Confirm it before logging in.";
+                    
+                    // Reset form fields manually only after absolute success
+                    document.getElementById('registerForm').reset();
                 }
             }
         </script>
